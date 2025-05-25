@@ -1,8 +1,10 @@
 package com.example.a1;
 
 import android.os.Bundle;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -10,9 +12,10 @@ import java.util.ArrayList;
 
 public class UserListActivity extends AppCompatActivity {
 
-    ListView listViewUsers;
-    Button btnBack;
-    ArrayList<UserItem> userList;
+    private ListView listViewUsers;
+    private Button btnBack;
+    private ArrayAdapter<String> adapter;
+    private ArrayList<String> userInfoList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,14 +27,16 @@ public class UserListActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // Пример пользователей (позже можно заменить загрузкой из базы)
-        userList = new ArrayList<>();
-        userList.add(new UserItem("admin@example.com", "Администратор"));
-        userList.add(new UserItem("user1@mail.com", "Пользователь"));
-        userList.add(new UserItem("moderator@mail.com", "Модератор"));
-
-        // Устанавливаем адаптер
-        UserAdapter adapter = new UserAdapter(this, userList);
-        listViewUsers.setAdapter(adapter);
+        // Загрузка пользователей из Supabase (через статический метод для Java)
+        new Thread(() -> {
+            userInfoList = SupabaseClient.getUserInfoList();
+            runOnUiThread(() -> {
+                if (userInfoList.isEmpty()) {
+                    Toast.makeText(this, "Нет пользователей или ошибка загрузки", Toast.LENGTH_SHORT).show();
+                }
+                adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, userInfoList);
+                listViewUsers.setAdapter(adapter);
+            });
+        }).start();
     }
 }

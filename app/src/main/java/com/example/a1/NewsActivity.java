@@ -14,10 +14,8 @@ public class NewsActivity extends AppCompatActivity {
 
     private ListView listViewNews;
     private Button btnBack;
-
-    private ArrayList<NewsItem> newsList;
-    private ArrayAdapter<String> adapter;
     private ArrayList<String> newsTitles;
+    private ArrayAdapter<String> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,24 +27,21 @@ public class NewsActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // Получаем список новостей из хранилища
-        newsList = NewsStorage.getNewsList();
-        newsTitles = new ArrayList<>();
+        // Получение списка новостей из Supabase
+        new Thread(() -> {
+            newsTitles = SupabaseClient.getNewsTitles();
 
-        // Заполняем список заголовков для отображения
-        for (NewsItem item : newsList) {
-            newsTitles.add(item.getTitle());
-        }
+            // Обновление UI — только в главном потоке!
+            runOnUiThread(() -> {
+                adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newsTitles);
+                listViewNews.setAdapter(adapter);
 
-        // Устанавливаем адаптер для ListView
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, newsTitles);
-        listViewNews.setAdapter(adapter);
-
-        // Обработка нажатий по элементам списка
-        listViewNews.setOnItemClickListener((parent, view, position, id) -> {
-            Intent intent = new Intent(NewsActivity.this, FullNewsActivity.class);
-            intent.putExtra("news", newsList.get(position)); // newsList.get(position) должен быть Serializable
-            startActivity(intent);
-        });
+                listViewNews.setOnItemClickListener((parent, view, position, id) -> {
+                    Intent intent = new Intent(NewsActivity.this, FullNewsActivity.class);
+                    intent.putExtra("newsTitle", newsTitles.get(position));
+                    startActivity(intent);
+                });
+            });
+        }).start();
     }
 }
